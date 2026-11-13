@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🐍 赛博霓虹贪吃蛇动画 - Cyber Snake Animation</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      background-color: #030712;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 顶部导航与控制工具条 */
+    .header-bar {
+      width: 100%;
+      max-width: 680px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .game-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #10b981, #06b6d4, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-link {
+      font-size: 11px;
+      color: #94a3b8;
+      text-decoration: none;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      padding-left: 8px;
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: #38bdf8;
+    }
+
+    .tool-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .tool-btn {
+      background: rgba(30, 41, 59, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+
+    .tool-btn:hover {
+      background: rgba(51, 65, 85, 0.9);
+      border-color: #10b981;
+      transform: translateY(-1px);
+    }
+
+    .tool-btn.active {
+      background: linear-gradient(135deg, #059669, #0d9488);
+      border-color: #34d399;
+      color: #fff;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.4);
+    }
+
+    /* 游戏主舞台容器 */
+    .game-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      aspect-ratio: 1 / 1;
+      max-height: 72vh;
+      background: radial-gradient(circle at 50% 50%, #0f172a, #020617);
+      border-radius: 20px;
+      border: 2px solid rgba(16, 185, 129, 0.35);
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.15), inset 0 0 40px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas#snakeCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* 状态面板与仪表信息 */
+    .stats-bar {
+      width: 100%;
+      max-width: 680px;
+      margin-top: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .stat-name {
+      font-size: 11px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-number {
+      font-size: 20px;
+      font-weight: 800;
+      color: #f1f5f9;
+      font-family: monospace;
+      margin-top: 2px;
+    }
+
+    .stat-number.highlight {
+      color: #34d399;
+      text-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+    }
+
+    /* 移动端触控十字键 */
+    .d-pad-container {
+      display: none;
+      margin-top: 10px;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(2, 44px);
+      gap: 6px;
+    }
+
+    .d-btn {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .d-btn:active {
+      background: #10b981;
+    }
+
+    @media (max-width: 640px) {
+      .header-bar, .stats-bar {
+        max-width: 94vw;
+      }
+      .game-wrapper {
+        max-width: 94vw;
+        max-height: 58vh;
+      }
+      .d-pad-container {
+        display: grid;
+      }
+      .stat-number {
+        font-size: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部控制条 -->
+  <div class="header-bar">
+    <div class="title-group">
+      <span style="font-size: 20px;">🐍</span>
+      <span class="game-title">CYBER SNAKE</span>
+      <a href="index.html" class="nav-link">← 回到主页</a>
+    </div>
+
+    <div class="tool-actions">
+      <button id="btn-mode" class="tool-btn active" title="点击切换 自动巡航动画 / 手动游玩">
+        <span>🤖</span> <span id="mode-text">AI 自动演示</span>
+      </button>
+      <button id="btn-skin" class="tool-btn" title="点击切换贪吃蛇皮肤发光颜色">
+        <span>🎨</span> <span id="skin-text">翡翠绿</span>
+      </button>
+      <button id="btn-audio" class="tool-btn" title="开启/关闭合成音效">
+        <span id="audio-icon">🔇</span> <span>音效</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 游戏主舞台 -->
+  <div class="game-wrapper">
+    <canvas id="snakeCanvas"></canvas>
+  </div>
+
+  <!-- 底部计分面板 -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <span class="stat-name">当前得分</span>
+      <span id="score-val" class="stat-number highlight">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-name">苹果数量</span>
+      <span id="food-val" class="stat-number">0</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-name">蛇身长度</span>
+      <span id="length-val" class="stat-number">4</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-name">最高纪录</span>
+      <span id="high-val" class="stat-number" style="color: #fbbf24;">0</span>
+    </div>
+  </div>
+
+  <!-- 移动端十字方向键 -->
+  <div class="d-pad-container">
+    <div></div>
+    <button class="d-btn" id="d-up">▲</button>
+    <div></div>
+    <button class="d-btn" id="d-left">◀</button>
+    <button class="d-btn" id="d-down">▼</button>
+    <button class="d-btn" id="d-right">▶</button>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       赛博贪吃蛇动画引擎 (Cyber Snake Animated Engine)
+       特性：
+       1. 智能寻路巡航系统：BFS 广度优先最优路径算法 + 曼哈顿保命回旋
+       2. 纯 Canvas 矢量渲染：霓虹圆角骨节、发光能量核心、灵动小眼睛、蛇舌微动
+       3. 粒子爆发特效系统：吃到能量果实时爆裂的霓虹粒子与浮动加分文字
+       4. Web Audio API 纯音频合成器：8-bit 经典吞咽与转向复古音效
+       5. 自动动画演示与全键盘/触摸手动驾驶无缝随时切换
+       ========================================================================== */
+
+    const canvas = document.getElementById('snakeCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // 棋盘格设定
+    const GRID_SIZE = 22; // 22 x 22 格子
+    let cellSize = 20;
+
+    function resizeBoard() {
+      const container = canvas.parentElement;
+      const rect = container.getBoundingClientRect();
+      const minDimension = Math.min(rect.width, rect.height);
+      canvas.width = minDimension * window.devicePixelRatio;
+      canvas.height = minDimension * window.devicePixelRatio;
+      cellSize = canvas.width / GRID_SIZE;
+    }
+    window.addEventListener('resize', resizeBoard);
+
+    // 皮肤配色表
+    const SKINS = [
+      { name: "翡翠绿", head: "#10b981", body: "#059669", tail: "#047857", glow: "#34d399", eye: "#ffffff" },
+      { name: "电光蓝", head: "#06b6d4", body: "#0284c7", tail: "#0369a1", glow: "#38bdf8", eye: "#ffffff" },
+      { name: "幻影紫", head: "#a855f7", body: "#9333ea", tail: "#7e22ce", glow: "#c084fc", eye: "#ffffff" },
+      { name: "炽焰粉", head: "#f43f5e", body: "#e11d48", tail: "#be123c", glow: "#fb7185", eye: "#ffffff" },
+      { name: "耀光金", head: "#f59e0b", body: "#d97706", tail: "#b45309", glow: "#fbbf24", eye: "#ffffff" }
+    ];
+
+    // 游戏核心状态
+    const state = {
+      autoMode: true,          // 是否处于自动动画寻路模式
+      skinIndex: 0,
+      audioEnabled: false,
+      snake: [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 },
+        { x: 7, y: 10 }
+      ],
+      direction: { x: 1, y: 0 },
+      nextDirection: { x: 1, y: 0 },
+      food: { x: 16, y: 10, pulse: 0, type: 'apple' },
+      score: 0,
+      highScore: parseInt(localStorage.getItem('snake_high_score') || '0', 10),
+      foodEaten: 0,
+      speedMs: 110,           // 移动间隔时间
+      lastStepTime: 0,
+      particles: [],
+      floatTexts: [],
+      tongueFlick: 0
+    };
+
+    // -------------------------------------------------------------------------
+    // 音频合成系统 (Web Audio API)
+    // -------------------------------------------------------------------------
+    let audioCtx = null;
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      } catch (e) {}
+    }
+
+    function playBeep(freq, type = 'sine', duration = 0.08) {
+      if (!audioCtx || !state.audioEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // -------------------------------------------------------------------------
+    // 食物与生成逻辑
+    // -------------------------------------------------------------------------
+    function spawnFood() {
+      let valid = false;
+      let newX = 0, newY = 0;
+      while (!valid) {
+        newX = Math.floor(Math.random() * GRID_SIZE);
+        newY = Math.floor(Math.random() * GRID_SIZE);
+        valid = !state.snake.some(segment => segment.x === newX && segment.y === newY);
+      }
+      state.food = {
+        x: newX,
+        y: newY,
+        pulse: 0,
+        type: Math.random() > 0.85 ? 'star' : 'apple'
+      };
+    }
+
+    // -------------------------------------------------------------------------
+    // 智能寻路算法 (BFS 最优避障路径 + 保命巡游)
+    // -------------------------------------------------------------------------
+    function getNextAiDirection() {
+      const head = state.snake[0];
+      const target = state.food;
+
+      // 广度优先搜索 (BFS) 寻找到达食物的最短可行路径
+      const queue = [[head]];
+      const visited = new Array(GRID_SIZE).fill(0).map(() => new Array(GRID_SIZE).fill(false));
+      visited[head.x][head.y] = true;
+
+      // 标记蛇身占用
+      state.snake.slice(0, -1).forEach(s => {
+        visited[s.x][s.y] = true;
+      });
+
+      const dirs = [
+        { x: 0, y: -1 }, // 上
+        { x: 1, y: 0 },  // 右
+        { x: 0, y: 1 },  // 下
+        { x: -1, y: 0 }  // 左
+      ];
+
+      let foundPath = null;
+
+      while (queue.length > 0) {
+        const path = queue.shift();
+        const cur = path[path.length - 1];
+
+        if (cur.x === target.x && cur.y === target.y) {
+          foundPath = path;
+          break;
+        }
+
+        for (let d of dirs) {
+          const nx = cur.x + d.x;
+          const ny = cur.y + d.y;
+
+          if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE && !visited[nx][ny]) {
+            visited[nx][ny] = true;
+            queue.push([...path, { x: nx, y: ny }]);
+          }
+        }
+      }
+
+      // 如果找到通往食物的安全路径，走第一步
+      if (foundPath && foundPath.length > 1) {
+        const nextCell = foundPath[1];
+        return { x: nextCell.x - head.x, y: nextCell.y - head.y };
+      }
+
+      // 备选应急保命策略：寻找一个能活得最久、最空旷的相邻格子
+      let bestDir = state.direction;
+      let maxFreeNeighbors = -1;
+
+      for (let d of dirs) {
+        // 不能逆行
+        if (d.x === -state.direction.x && d.y === -state.direction.y) continue;
+
+        const nx = head.x + d.x;
+        const ny = head.y + d.y;
+
+        // 检查撞墙与撞身
+        if (nx >= 0 && nx < GRID_SIZE && ny >= 0 && ny < GRID_SIZE) {
+          const isBody = state.snake.some(s => s.x === nx && s.y === ny);
+          if (!isBody) {
+            // 计算周围空闲格子数
+            let freeCount = 0;
+            for (let d2 of dirs) {
+              const nnx = nx + d2.x;
+              const nny = ny + d2.y;
+              if (nnx >= 0 && nnx < GRID_SIZE && nny >= 0 && nny < GRID_SIZE) {
+                if (!state.snake.some(s => s.x === nnx && s.y === nny)) {
+                  freeCount++;
+                }
+              }
+            }
+            if (freeCount > maxFreeNeighbors) {
+              maxFreeNeighbors = freeCount;
+              bestDir = d;
+            }
+          }
+        }
+      }
+
+      return bestDir;
+    }
+
+    // -------------------------------------------------------------------------
+    // 物理步进与游戏循环更新
+    // -------------------------------------------------------------------------
+    function step() {
+      // 1. 获取方向
+      if (state.autoMode) {
+        state.nextDirection = getNextAiDirection();
+      }
+      state.direction = state.nextDirection;
+
+      // 2. 计算蛇头新坐标
+      const head = state.snake[0];
+      const newHead = {
+        x: head.x + state.direction.x,
+        y: head.y + state.direction.y
+      };
+
+      // 3. 碰撞检测 (撞墙或自身)
+      const hitWall = newHead.x < 0 || newHead.x >= GRID_SIZE || newHead.y < 0 || newHead.y >= GRID_SIZE;
+      const hitSelf = state.snake.some(seg => seg.x === newHead.x && seg.y === newHead.y);
+
+      if (hitWall || hitSelf) {
+        // 游戏重置 / 自动重开
+        playBeep(180, 'sawtooth', 0.2);
+        resetGame();
+        return;
+      }
+
+      // 4. 前进并插入新头
+      state.snake.unshift(newHead);
+
+      // 5. 是否吃到食物
+      if (newHead.x === state.food.x && newHead.y === state.food.y) {
+        const isStar = state.food.type === 'star';
+        const addScore = isStar ? 50 : 10;
+        state.score += addScore;
+        state.foodEaten++;
+
+        if (state.score > state.highScore) {
+          state.highScore = state.score;
+          localStorage.setItem('snake_high_score', state.highScore);
+        }
+
+        // 声音反馈
+        playBeep(isStar ? 880 : 540, 'triangle', 0.12);
+
+        // 爆炸粒子
+        spawnParticles(newHead.x, newHead.y, isStar ? '#fbbf24' : '#ef4444');
+
+        // 浮动计分文字
+        state.floatTexts.push({
+          x: (newHead.x + 0.5) * cellSize,
+          y: (newHead.y + 0.5) * cellSize,
+          text: `+${addScore}`,
+          color: isStar ? '#fbbf24' : '#34d399',
+          life: 1.0
+        });
+
+        // 生成新食物 (蛇不收缩尾部，自增长度)
+        spawnFood();
+      } else {
+        // 正常滑行，移除蛇尾
+        state.snake.pop();
+      }
+
+      updateStatsUI();
+    }
+
+    function resetGame() {
+      state.snake = [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 },
+        { x: 7, y: 10 }
+      ];
+      state.direction = { x: 1, y: 0 };
+      state.nextDirection = { x: 1, y: 0 };
+      state.score = 0;
+      state.foodEaten = 0;
+      spawnFood();
+      updateStatsUI();
+    }
+
+    // 粒子系统
+    function spawnParticles(gx, gy, color) {
+      const cx = (gx + 0.5) * cellSize;
+      const cy = (gy + 0.5) * cellSize;
+      for (let i = 0; i < 18; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 4;
+        state.particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: 2 + Math.random() * 3,
+          color: color,
+          life: 1.0,
+          decay: 0.03 + Math.random() * 0.04
+        });
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 渲染器 (Pure Canvas Vector Rendering)
+    // -------------------------------------------------------------------------
+    function render(time) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const skin = SKINS[state.skinIndex];
+
+      // 1. 绘制暗色背景网格
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= GRID_SIZE; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * cellSize, 0);
+        ctx.lineTo(i * cellSize, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * cellSize);
+        ctx.lineTo(canvas.width, i * cellSize);
+        ctx.stroke();
+      }
+
+      // 2. 绘制食物 (脉冲红苹果 / 金星)
+      state.food.pulse += 0.08;
+      const foodCx = (state.food.x + 0.5) * cellSize;
+      const foodCy = (state.food.y + 0.5) * cellSize;
+      const pulseSize = cellSize * (0.36 + Math.sin(state.food.pulse) * 0.06);
+
+      ctx.save();
+      if (state.food.type === 'star') {
+        // 金色超级星
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(foodCx, foodCy, pulseSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${cellSize * 0.5}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('★', foodCx, foodCy);
+      } else {
+        // 赛博红苹果
+        ctx.shadowColor = '#f43f5e';
+        ctx.shadowBlur = 16;
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.arc(foodCx, foodCy, pulseSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 果实高光
+        ctx.fillStyle = '#fecdd3';
+        ctx.beginPath();
+        ctx.arc(foodCx - pulseSize * 0.35, foodCy - pulseSize * 0.35, pulseSize * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 绿色小叶片
+        ctx.fillStyle = '#34d399';
+        ctx.beginPath();
+        ctx.ellipse(foodCx + pulseSize * 0.3, foodCy - pulseSize * 0.8, pulseSize * 0.35, pulseSize * 0.18, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 3. 绘制蛇身 (自尾至头，渐变发光圆角矩形与连接体)
+      for (let i = state.snake.length - 1; i >= 0; i--) {
+        const seg = state.snake[i];
+        const ratio = i / state.snake.length;
+        const x = seg.x * cellSize;
+        const y = seg.y * cellSize;
+
+        ctx.save();
+        if (i === 0) {
+          // 蛇头
+          ctx.shadowColor = skin.glow;
+          ctx.shadowBlur = 18;
+          ctx.fillStyle = skin.head;
+          ctx.beginPath();
+          ctx.roundRect(x + 2, y + 2, cellSize - 4, cellSize - 4, cellSize * 0.35);
+          ctx.fill();
+
+          // 灵动大眼睛
+          const eyeRadius = cellSize * 0.13;
+          const eyeOffset = cellSize * 0.26;
+          const cx = x + cellSize / 2;
+          const cy = y + cellSize / 2;
+
+          let eye1 = { x: cx, y: cy };
+          let eye2 = { x: cx, y: cy };
+
+          if (state.direction.x === 1) { // 向右
+            eye1 = { x: cx + eyeOffset, y: cy - eyeOffset };
+            eye2 = { x: cx + eyeOffset, y: cy + eyeOffset };
+          } else if (state.direction.x === -1) { // 向左
+            eye1 = { x: cx - eyeOffset, y: cy - eyeOffset };
+            eye2 = { x: cx - eyeOffset, y: cy + eyeOffset };
+          } else if (state.direction.y === -1) { // 向上
+            eye1 = { x: cx - eyeOffset, y: cy - eyeOffset };
+            eye2 = { x: cx + eyeOffset, y: cy - eyeOffset };
+          } else { // 向下
+            eye1 = { x: cx - eyeOffset, y: cy + eyeOffset };
+            eye2 = { x: cx + eyeOffset, y: cy + eyeOffset };
+          }
+
+          // 白眼球
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(eye1.x, eye1.y, eyeRadius, 0, Math.PI * 2);
+          ctx.arc(eye2.x, eye2.y, eyeRadius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 黑眼珠 (盯向食物方向)
+          const lookX = Math.sign(state.food.x - seg.x) * 1.5;
+          const lookY = Math.sign(state.food.y - seg.y) * 1.5;
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(eye1.x + lookX, eye1.y + lookY, eyeRadius * 0.55, 0, Math.PI * 2);
+          ctx.arc(eye2.x + lookX, eye2.y + lookY, eyeRadius * 0.55, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 吐信子微动 (Tongue flick)
+          state.tongueFlick += 0.15;
+          if (Math.sin(state.tongueFlick) > 0.4) {
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            const tongueLen = cellSize * 0.35;
+            const tx = cx + state.direction.x * (cellSize / 2 + tongueLen);
+            const ty = cy + state.direction.y * (cellSize / 2 + tongueLen);
+            ctx.moveTo(cx + state.direction.x * (cellSize / 2), cy + state.direction.y * (cellSize / 2));
+            ctx.lineTo(tx, ty);
+            ctx.stroke();
+          }
+
+        } else {
+          // 蛇身体骨节
+          ctx.fillStyle = i % 2 === 0 ? skin.body : skin.tail;
+          ctx.beginPath();
+          ctx.roundRect(x + 2, y + 2, cellSize - 4, cellSize - 4, cellSize * 0.25);
+          ctx.fill();
+
+          // 核心能量斑纹
+          ctx.fillStyle = skin.glow;
+          ctx.globalAlpha = 0.35 * (1 - ratio * 0.5);
+          ctx.beginPath();
+          ctx.arc(x + cellSize / 2, y + cellSize / 2, cellSize * 0.15, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1.0;
+        }
+        ctx.restore();
+      }
+
+      // 4. 渲染粒子爆发
+      for (let i = state.particles.length - 1; i >= 0; i--) {
+        const p = state.particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life -= p.decay;
+        if (p.life <= 0) {
+          state.particles.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      // 5. 渲染浮动计分文字
+      for (let i = state.floatTexts.length - 1; i >= 0; i--) {
+        const ft = state.floatTexts[i];
+        ft.y -= 1.2;
+        ft.life -= 0.025;
+        if (ft.life <= 0) {
+          state.floatTexts.splice(i, 1);
+          continue;
+        }
+        ctx.save();
+        ctx.font = `bold ${cellSize * 0.65}px monospace`;
+        ctx.fillStyle = ft.color;
+        ctx.globalAlpha = ft.life;
+        ctx.shadowColor = ft.color;
+        ctx.shadowBlur = 8;
+        ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // 主循环 (RAF + 步进时间戳控制)
+    // -------------------------------------------------------------------------
+    function gameLoop(timestamp) {
+      if (!state.lastStepTime) state.lastStepTime = timestamp;
+      const elapsed = timestamp - state.lastStepTime;
+
+      if (elapsed > state.speedMs) {
+        step();
+        state.lastStepTime = timestamp;
+      }
+
+      render(timestamp);
+      requestAnimationFrame(gameLoop);
+    }
+
+    // -------------------------------------------------------------------------
+    // 输入事件处理 (键盘与触控)
+    // -------------------------------------------------------------------------
+    function changeDirection(dx, dy) {
+      switchToManual();
+      // 不能向正后方掉头
+      if (dx === -state.direction.x && dy === -state.direction.y) return;
+      state.nextDirection = { x: dx, y: dy };
+      playBeep(320, 'sine', 0.04);
+    }
+
+    window.addEventListener('keydown', (e) => {
+      switch (e.code) {
+        case 'KeyW':
+        case 'ArrowUp': changeDirection(0, -1); break;
+        case 'KeyS':
+        case 'ArrowDown': changeDirection(0, 1); break;
+        case 'KeyA':
+        case 'ArrowLeft': changeDirection(-1, 0); break;
+        case 'KeyD':
+        case 'ArrowRight': changeDirection(1, 0); break;
+        case 'Space': toggleMode(); e.preventDefault(); break;
+      }
+    });
+
+    // 触控十字键绑定
+    document.getElementById('d-up').addEventListener('click', () => changeDirection(0, -1));
+    document.getElementById('d-down').addEventListener('click', () => changeDirection(0, 1));
+    document.getElementById('d-left').addEventListener('click', () => changeDirection(-1, 0));
+    document.getElementById('d-right').addEventListener('click', () => changeDirection(1, 0));
+
+    // 模式切换
+    const btnMode = document.getElementById('btn-mode');
+    const modeText = document.getElementById('mode-text');
+
+    function toggleMode() {
+      state.autoMode = !state.autoMode;
+      updateModeUI();
+    }
+    btnMode.addEventListener('click', toggleMode);
+
+    function switchToManual() {
+      if (state.autoMode) {
+        state.autoMode = false;
+        updateModeUI();
+      }
+    }
+
+    function updateModeUI() {
+      if (state.autoMode) {
+        btnMode.classList.add('active');
+        modeText.innerText = "AI 自动演示";
+      } else {
+        btnMode.classList.remove('active');
+        modeText.innerText = "手动游玩中";
+      }
+    }
+
+    // 皮肤切换
+    const btnSkin = document.getElementById('btn-skin');
+    const skinText = document.getElementById('skin-text');
+    btnSkin.addEventListener('click', () => {
+      state.skinIndex = (state.skinIndex + 1) % SKINS.length;
+      skinText.innerText = SKINS[state.skinIndex].name;
+    });
+
+    // 音效开关
+    const btnAudio = document.getElementById('btn-audio');
+    const audioIcon = document.getElementById('audio-icon');
+    btnAudio.addEventListener('click', () => {
+      initAudio();
+      state.audioEnabled = !state.audioEnabled;
+      if (state.audioEnabled) {
+        btnAudio.classList.add('active');
+        audioIcon.innerText = "🔊";
+      } else {
+        btnAudio.classList.remove('active');
+        audioIcon.innerText = "🔇";
+      }
+    });
+
+    // 更新界面计分
+    const scoreVal = document.getElementById('score-val');
+    const foodVal = document.getElementById('food-val');
+    const lengthVal = document.getElementById('length-val');
+    const highVal = document.getElementById('high-val');
+
+    function updateStatsUI() {
+      scoreVal.innerText = state.score;
+      foodVal.innerText = state.foodEaten;
+      lengthVal.innerText = state.snake.length;
+      highVal.innerText = state.highScore;
+    }
+
+    // 初始化启动
+    resizeBoard();
+    spawnFood();
+    updateStatsUI();
+    requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
+

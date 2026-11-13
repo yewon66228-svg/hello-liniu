@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🏎️ 超级赛车 3D 极速动画 - Super Racing Highway</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #050508;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft YaHei", sans-serif;
+      color: #fff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    canvas#canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .brand-tag {
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8, #f43f5e);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-link {
+      color: #94a3b8;
+      font-size: 12px;
+      text-decoration: none;
+      padding-left: 8px;
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      transition: color 0.2s;
+    }
+
+    .nav-link:hover {
+      color: #38bdf8;
+    }
+
+    .top-actions {
+      pointer-events: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #e2e8f0;
+      padding: 7px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .action-btn:hover {
+      background: rgba(30, 41, 59, 0.9);
+      border-color: #38bdf8;
+      transform: translateY(-1px);
+    }
+
+    .action-btn.active {
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      border-color: #38bdf8;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.5);
+    }
+
+    .hud-overlay {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      pointer-events: none;
+      z-index: 40;
+    }
+
+    .dashboard-panel {
+      pointer-events: auto;
+      background: radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.85), rgba(2, 6, 23, 0.95));
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 18px 24px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(56, 189, 248, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .speed-dial-wrap {
+      position: relative;
+      width: 100px;
+      height: 100px;
+    }
+
+    .speed-dial-wrap svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .dial-bg {
+      stroke: rgba(255, 255, 255, 0.12);
+      stroke-width: 8;
+      fill: none;
+    }
+
+    .dial-value {
+      stroke: #38bdf8;
+      stroke-width: 8;
+      fill: none;
+      stroke-dasharray: 251.2;
+      stroke-dashoffset: 251.2;
+      transition: stroke-dashoffset 0.1s linear, stroke 0.2s ease;
+      stroke-linecap: round;
+    }
+
+    .dial-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .speed-number {
+      font-size: 28px;
+      font-weight: 900;
+      font-family: "Impact", "Arial Black", sans-serif;
+      letter-spacing: -1px;
+      color: #fff;
+      text-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+      line-height: 1;
+    }
+
+    .speed-unit {
+      font-size: 11px;
+      color: #94a3b8;
+      font-weight: 700;
+      margin-top: 2px;
+      letter-spacing: 0.5px;
+    }
+
+    .stats-info {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 120px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .stat-label {
+      color: #94a3b8;
+    }
+
+    .stat-val {
+      font-weight: 700;
+      color: #f8fafc;
+      font-family: monospace;
+      font-size: 14px;
+    }
+
+    .nitro-bar-wrap {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.1);
+      height: 8px;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .nitro-fill {
+      height: 100%;
+      width: 80%;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6, #ec4899);
+      border-radius: 999px;
+      box-shadow: 0 0 12px #38bdf8;
+      transition: width 0.1s ease;
+    }
+
+    .mode-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .controls-panel {
+      pointer-events: auto;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 18px;
+      padding: 16px 20px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .control-keys {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+
+    .key-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-bottom: 2px solid rgba(255, 255, 255, 0.35);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: monospace;
+    }
+
+    .mobile-touch-bar {
+      display: none;
+      position: absolute;
+      bottom: 120px;
+      left: 16px;
+      right: 16px;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 45;
+    }
+
+    .touch-btn-group {
+      pointer-events: auto;
+      display: flex;
+      gap: 12px;
+    }
+
+    .touch-btn {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.8);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: #fff;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      transition: transform 0.1s;
+    }
+
+    .touch-btn:active {
+      transform: scale(0.92);
+      background: rgba(56, 189, 248, 0.4);
+      border-color: #38bdf8;
+    }
+
+    .nitro-touch-btn {
+      background: linear-gradient(135deg, #f43f5e, #ec4899);
+      border-color: #fbcfe8;
+      box-shadow: 0 0 16px rgba(244, 63, 94, 0.6);
+      width: 60px;
+      height: 60px;
+    }
+
+    @media (max-width: 768px) {
+      .hud-overlay {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        bottom: 12px;
+        left: 12px;
+        right: 12px;
+      }
+      .controls-panel {
+        display: none;
+      }
+      .mobile-touch-bar {
+        display: flex;
+      }
+      .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .dashboard-panel {
+        padding: 12px 18px;
+      }
+      .speed-dial-wrap {
+        width: 80px;
+        height: 80px;
+      }
+      .speed-number {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="canvas"></canvas>
+
+    <div class="top-bar">
+      <div class="brand-tag">
+        <span style="font-size: 18px;">🏎️</span>
+        <span class="brand-title">APEX SPEED 极速赛道</span>
+        <a href="index.html" class="nav-link">← 回到主页</a>
+      </div>
+
+      <div class="top-actions">
+        <button id="btn-mode" class="action-btn active">
+          <span>🔄</span> <span id="mode-text">自动演示中</span>
+        </button>
+        <button id="btn-theme" class="action-btn">
+          <span>🌆</span> <span id="theme-text">赛博霓虹</span>
+        </button>
+        <button id="btn-color" class="action-btn">
+          <span>🎨</span> <span id="color-text">炽焰红</span>
+        </button>
+        <button id="btn-audio" class="action-btn">
+          <span id="audio-icon">🔇</span> <span>声效</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-touch-bar">
+      <div class="touch-btn-group">
+        <button class="touch-btn" id="t-left">◀</button>
+        <button class="touch-btn" id="t-right">▶</button>
+      </div>
+      <div class="touch-btn-group">
+        <button class="touch-btn" id="t-brake">🛑</button>
+        <button class="touch-btn nitro-touch-btn" id="t-nitro">🔥</button>
+        <button class="touch-btn" id="t-gas">⚡</button>
+      </div>
+    </div>
+
+    <div class="hud-overlay">
+      <div class="dashboard-panel">
+        <div class="speed-dial-wrap">
+          <svg viewBox="0 0 100 100">
+            <circle class="dial-bg" cx="50" cy="50" r="40" />
+            <circle id="speed-dial-bar" class="dial-value" cx="50" cy="50" r="40" />
+          </svg>
+          <div class="dial-center">
+            <div id="speed-text" class="speed-number">0</div>
+            <div class="speed-unit">KM/H</div>
+          </div>
+        </div>
+
+        <div class="stats-info">
+          <div class="stat-row">
+            <span class="stat-label">档位 GEAR</span>
+            <span id="gear-val" class="stat-val" style="color: #38bdf8; font-size: 16px;">N</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">转速 RPM</span>
+            <span id="rpm-val" class="stat-val">1200</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label">里程 DIST</span>
+            <span id="dist-val" class="stat-val">0.0 km</span>
+          </div>
+          <div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:2px;">
+              <span class="stat-label">NITRO 氮气</span>
+              <span id="nitro-val" style="color: #06b6d4; font-weight:700;">85%</span>
+            </div>
+            <div class="nitro-bar-wrap">
+              <div id="nitro-fill-bar" class="nitro-fill" style="width: 85%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 700; font-size: 13px; color: #f8fafc;">驾驶操控指南</span>
+          <span id="status-badge" class="mode-badge">AUTO CRUISE</span>
+        </div>
+        <div class="control-keys">
+          <span class="key-badge">W / ↑</span> 加速
+          <span class="key-badge" style="margin-left:8px;">S / ↓</span> 刹车
+          <span class="key-badge" style="margin-left:8px;">A / D</span> 转向
+        </div>
+        <div class="control-keys">
+          <span class="key-badge">SPACE 空格</span> 开启超频氮气 (NOS)
+          <span class="key-badge" style="margin-left:8px;">C</span> 换漆
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width = 0;
+    let height = 0;
+    function resizeCanvas() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    const ROAD = {
+      segmentLength: 200,
+      totalSegments: 1600,
+      rumbleLength: 3,
+      roadWidth: 2200,
+      lanes: 3,
+      fieldOfView: 100,
+      cameraHeight: 1100,
+      drawDistance: 320,
+      cameraDepth: null
+    };
+    ROAD.cameraDepth = 1 / Math.tan((ROAD.fieldOfView / 2) * Math.PI / 180);
+
+    const state = {
+      autoCruise: true,
+      themeIndex: 0,
+      carColorIndex: 0,
+      audioEnabled: false,
+      position: 0,
+      speed: 0,
+      maxSpeed: 280,
+      nitroMaxSpeed: 360,
+      accel: 1.2,
+      braking: 2.5,
+      decel: 0.6,
+      playerX: 0,
+      playerTilt: 0,
+      nitroActive: false,
+      nitroFuel: 85,
+      rpm: 1200,
+      gear: 1,
+      distanceTotal: 0,
+      overtakeCount: 0,
+      timeElapsed: 0,
+      bumpOffset: 0
+    };
+
+    const CAR_COLORS = [
+      { name: "炽焰红", primary: "#ef4444", secondary: "#991b1b", glow: "#f87171" },
+      { name: "电光蓝", primary: "#06b6d4", secondary: "#0e7490", glow: "#38bdf8" },
+      { name: "极光绿", primary: "#10b981", secondary: "#065f46", glow: "#34d399" },
+      { name: "流光金", primary: "#f59e0b", secondary: "#b45309", glow: "#fbbf24" },
+      { name: "暗影黑", primary: "#334155", secondary: "#0f172a", glow: "#64748b" }
+    ];
+
+    const THEMES = [
+      {
+        name: "赛博霓虹",
+        skyTop: "#030712",
+        skyBottom: "#1e1b4b",
+        ground: "#09090b",
+        fog: "rgba(15, 23, 42, 0.9)",
+        roadDark: "#111827",
+        roadLight: "#182234",
+        rumble1: "#06b6d4",
+        rumble2: "#ec4899",
+        lane: "rgba(56, 189, 248, 0.7)",
+        sunColor: "#f43f5e"
+      },
+      {
+        name: "落日海滨",
+        skyTop: "#4c0519",
+        skyBottom: "#fb923c",
+        ground: "#1c1917",
+        fog: "rgba(67, 20, 7, 0.8)",
+        roadDark: "#292524",
+        roadLight: "#332f2c",
+        rumble1: "#f97316",
+        rumble2: "#ffffff",
+        lane: "rgba(254, 215, 170, 0.7)",
+        sunColor: "#fde047"
+      },
+      {
+        name: "晴空白昼",
+        skyTop: "#0284c7",
+        skyBottom: "#bae6fd",
+        ground: "#15803d",
+        fog: "rgba(186, 230, 253, 0.8)",
+        roadDark: "#334155",
+        roadLight: "#3b4759",
+        rumble1: "#ef4444",
+        rumble2: "#ffffff",
+        lane: "rgba(255, 255, 255, 0.8)",
+        sunColor: "#fffbeb"
+      }
+    ];
+
+    const segments = [];
+    function buildTrack() {
+      segments.length = 0;
+      let curve = 0;
+      let y = 0;
+
+      for (let i = 0; i < ROAD.totalSegments; i++) {
+        if (i > 100 && i < 260) curve = 2.4;
+        else if (i > 320 && i < 480) curve = -2.6;
+        else if (i > 540 && i < 700) curve = 3.2;
+        else if (i > 800 && i < 1000) curve = -1.8;
+        else if (i > 1150 && i < 1350) curve = 2.0;
+        else curve = 0;
+
+        if (i > 180 && i < 400) {
+          y = Math.sin((i - 180) / 35) * 1400;
+        } else if (i > 600 && i < 900) {
+          y = Math.sin((i - 600) / 45) * 1900;
+        } else if (i > 1100 && i < 1400) {
+          y = Math.sin((i - 1100) / 30) * 1200;
+        } else {
+          y = 0;
+        }
+
+        segments.push({
+          index: i,
+          world: { x: 0, y: y, z: i * ROAD.segmentLength },
+          camera: { x: 0, y: 0, z: 0 },
+          screen: { x: 0, y: 0, w: 0, scale: 0 },
+          curve: curve,
+          clip: 0,
+          sprites: [],
+          cars: []
+        });
+
+        if (i % 25 === 0) {
+          segments[i].sprites.push({ type: 'light-pole', offset: -1.45, height: 1.2 });
+          segments[i].sprites.push({ type: 'light-pole', offset: 1.45, height: 1.2 });
+        }
+        if (i % 200 === 0 && i > 0) {
+          segments[i].sprites.push({ type: 'speed-arch', offset: 0, height: 1.5 });
+        }
+      }
+    }
+    buildTrack();
+
+    const trafficCars = [];
+    const AI_COLORS = ['#38bdf8', '#fbbf24', '#a855f7', '#ec4899', '#22c55e', '#f97316'];
+    function initTraffic() {
+      trafficCars.length = 0;
+      for (let i = 0; i < 28; i++) {
+        trafficCars.push({
+          segmentIndex: Math.floor(Math.random() * (ROAD.totalSegments - 200)) + 100,
+          percent: Math.random(),
+          offset: (Math.floor(Math.random() * 3) - 1) * 0.58,
+          speed: 80 + Math.random() * 100,
+          color: AI_COLORS[i % AI_COLORS.length],
+          width: 320,
+          length: 420
+        });
+      }
+    }
+    initTraffic();
+
+    const particles = [];
+    const speedLines = [];
+    for (let i = 0; i < 40; i++) {
+      speedLines.push({
+        x: (Math.random() - 0.5) * 2,
+        y: (Math.random() - 0.5) * 2,
+        z: Math.random(),
+        length: 0.1 + Math.random() * 0.2,
+        alpha: 0.3 + Math.random() * 0.7
+      });
+    }
+
+    function spawnExhaustParticle(isNitro, carScreenX, carScreenY, carScale) {
+      const offsetX = 32 * carScale;
+      const offsetY = 28 * carScale;
+      for (let side = -1; side <= 1; side += 2) {
+        particles.push({
+          x: carScreenX + side * offsetX + (Math.random() - 0.5) * 6 * carScale,
+          y: carScreenY + offsetY + (Math.random() - 0.5) * 4 * carScale,
+          vx: side * (0.8 + Math.random() * 1.5) * (isNitro ? 2.5 : 1),
+          vy: 2 + Math.random() * 4 + (state.speed / 50),
+          size: (isNitro ? 8 : 5) * carScale,
+          life: 1.0,
+          decay: 0.04 + Math.random() * 0.05,
+          color: isNitro ? '#38bdf8' : (Math.random() > 0.4 ? '#f97316' : '#ef4444')
+        });
+      }
+    }
+
+    function spawnTireSmoke(carScreenX, carScreenY, carScale) {
+      const offsetX = 56 * carScale;
+      const offsetY = 32 * carScale;
+      for (let side = -1; side <= 1; side += 2) {
+        particles.push({
+          x: carScreenX + side * offsetX,
+          y: carScreenY + offsetY,
+          vx: (Math.random() - 0.5) * 3,
+          vy: -0.5 - Math.random() * 2,
+          size: (12 + Math.random() * 8) * carScale,
+          life: 0.8,
+          decay: 0.03,
+          color: 'rgba(226, 232, 240, 0.4)'
+        });
+      }
+    }
+
+    let audioCtx = null;
+    let engineOsc = null;
+    let engineGain = null;
+    let nitroOsc = null;
+    let nitroGain = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+
+        engineOsc = audioCtx.createOscillator();
+        engineGain = audioCtx.createGain();
+        engineOsc.type = 'sawtooth';
+        engineOsc.frequency.setValueAtTime(60, audioCtx.currentTime);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(450, audioCtx.currentTime);
+
+        engineOsc.connect(filter);
+        filter.connect(engineGain);
+        engineGain.connect(audioCtx.destination);
+        engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        engineOsc.start();
+
+        nitroOsc = audioCtx.createOscillator();
+        nitroGain = audioCtx.createGain();
+        nitroOsc.type = 'triangle';
+        nitroOsc.frequency.setValueAtTime(220, audioCtx.currentTime);
+        nitroOsc.connect(nitroGain);
+        nitroGain.connect(audioCtx.destination);
+        nitroGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        nitroOsc.start();
+      } catch (e) {}
+    }
+
+    function updateAudio() {
+      if (!audioCtx || !state.audioEnabled) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      const baseFreq = 45 + (state.rpm / 8000) * 160 + (state.speed / 10);
+      engineOsc.frequency.setTargetAtTime(baseFreq, audioCtx.currentTime, 0.05);
+
+      const targetVol = state.speed > 5 ? Math.min(0.25, 0.08 + (state.speed / 360) * 0.18) : 0.04;
+      engineGain.gain.setTargetAtTime(targetVol, audioCtx.currentTime, 0.08);
+
+      if (state.nitroActive && state.speed > 50) {
+        nitroOsc.frequency.setTargetAtTime(320 + Math.sin(Date.now() * 0.02) * 50, audioCtx.currentTime, 0.05);
+        nitroGain.gain.setTargetAtTime(0.18, audioCtx.currentTime, 0.05);
+      } else {
+        nitroGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+      }
+    }
+
+    const keys = { up: false, down: false, left: false, right: false, nitro: false };
+
+    window.addEventListener('keydown', (e) => {
+      switch (e.code) {
+        case 'KeyW':
+        case 'ArrowUp': keys.up = true; switchToManual(); break;
+        case 'KeyS':
+        case 'ArrowDown': keys.down = true; switchToManual(); break;
+        case 'KeyA':
+        case 'ArrowLeft': keys.left = true; switchToManual(); break;
+        case 'KeyD':
+        case 'ArrowRight': keys.right = true; switchToManual(); break;
+        case 'Space': keys.nitro = true; switchToManual(); e.preventDefault(); break;
+        case 'KeyC': cycleCarColor(); break;
+        case 'KeyT': cycleTheme(); break;
+        case 'KeyM': toggleAudio(); break;
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      switch (e.code) {
+        case 'KeyW':
+        case 'ArrowUp': keys.up = false; break;
+        case 'KeyS':
+        case 'ArrowDown': keys.down = false; break;
+        case 'KeyA':
+        case 'ArrowLeft': keys.left = false; break;
+        case 'KeyD':
+        case 'ArrowRight': keys.right = false; break;
+        case 'Space': keys.nitro = false; break;
+      }
+    });
+
+    function bindTouch(id, keyName) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const start = (e) => { e.preventDefault(); keys[keyName] = true; switchToManual(); };
+      const end = (e) => { e.preventDefault(); keys[keyName] = false; };
+      el.addEventListener('touchstart', start);
+      el.addEventListener('touchend', end);
+      el.addEventListener('mousedown', start);
+      el.addEventListener('mouseup', end);
+    }
+    bindTouch('t-gas', 'up');
+    bindTouch('t-brake', 'down');
+    bindTouch('t-left', 'left');
+    bindTouch('t-right', 'right');
+    bindTouch('t-nitro', 'nitro');
+
+    const btnMode = document.getElementById('btn-mode');
+    const modeText = document.getElementById('mode-text');
+    const statusBadge = document.getElementById('status-badge');
+
+    btnMode.addEventListener('click', () => {
+      state.autoCruise = !state.autoCruise;
+      updateModeUI();
+    });
+
+    function switchToManual() {
+      if (state.autoCruise) {
+        state.autoCruise = false;
+        updateModeUI();
+      }
+    }
+
+    function updateModeUI() {
+      if (state.autoCruise) {
+        btnMode.classList.add('active');
+        modeText.innerText = "自动演示中";
+        statusBadge.innerText = "AUTO CRUISE";
+        statusBadge.style.color = "#38bdf8";
+        statusBadge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+      } else {
+        btnMode.classList.remove('active');
+        modeText.innerText = "手动驾驶模式";
+        statusBadge.innerText = "MANUAL DRIVE";
+        statusBadge.style.color = "#ec4899";
+        statusBadge.style.borderColor = "rgba(236, 72, 153, 0.4)";
+      }
+    }
+
+    const btnTheme = document.getElementById('btn-theme');
+    const themeText = document.getElementById('theme-text');
+    function cycleTheme() {
+      state.themeIndex = (state.themeIndex + 1) % THEMES.length;
+      themeText.innerText = THEMES[state.themeIndex].name;
+    }
+    btnTheme.addEventListener('click', cycleTheme);
+
+    const btnColor = document.getElementById('btn-color');
+    const colorText = document.getElementById('color-text');
+    function cycleCarColor() {
+      state.carColorIndex = (state.carColorIndex + 1) % CAR_COLORS.length;
+      colorText.innerText = CAR_COLORS[state.carColorIndex].name;
+    }
+    btnColor.addEventListener('click', cycleCarColor);
+
+    const btnAudio = document.getElementById('btn-audio');
+    const audioIcon = document.getElementById('audio-icon');
+    function toggleAudio() {
+      initAudio();
+      state.audioEnabled = !state.audioEnabled;
+      if (state.audioEnabled) {
+        audioIcon.innerText = "🔊";
+        btnAudio.classList.add('active');
+        if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      } else {
+        audioIcon.innerText = "🔇";
+        btnAudio.classList.remove('active');
+        if (engineGain) engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
+        if (nitroGain) nitroGain.gain.setValueAtTime(0, audioCtx.currentTime);
+      }
+    }
+    btnAudio.addEventListener('click', toggleAudio);
+
+    function project(point, cameraX, cameraY, cameraZ) {
+      point.camera.x = (point.world.x || 0) - cameraX;
+      point.camera.y = (point.world.y || 0) - cameraY;
+      point.camera.z = (point.world.z || 0) - cameraZ;
+
+      point.screen.scale = ROAD.cameraDepth / point.camera.z;
+      point.screen.x = Math.round((width / 2) + (point.screen.scale * point.camera.x * width / 2));
+      point.screen.y = Math.round((height / 2) - (point.screen.scale * point.camera.y * height / 2));
+      point.screen.w = Math.round(point.screen.scale * ROAD.roadWidth * width / 2);
+    }
+
+    function drawPolygon(x1, y1, x2, y2, x3, y3, x4, y4, color) {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.lineTo(x4, y4);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    let lastTime = performance.now();
+
+    function update(dt) {
+      state.timeElapsed += dt;
+
+      if (state.autoCruise) {
+        const currentSegIndex = Math.floor(state.position / ROAD.segmentLength) % ROAD.totalSegments;
+        const targetX = Math.sin(state.timeElapsed * 0.4) * 0.6;
+        state.playerX += (targetX - state.playerX) * 0.05;
+
+        if (state.speed < state.maxSpeed - 20) {
+          state.speed += state.accel * 1.5;
+        }
+
+        if (Math.sin(state.timeElapsed * 0.6) > 0.65 && state.nitroFuel > 20) {
+          state.nitroActive = true;
+        } else {
+          state.nitroActive = false;
+        }
+      } else {
+        if (keys.nitro && state.nitroFuel > 5) {
+          state.nitroActive = true;
+          state.nitroFuel = Math.max(0, state.nitroFuel - 0.4);
+        } else {
+          state.nitroActive = false;
+          state.nitroFuel = Math.min(100, state.nitroFuel + 0.12);
+        }
+
+        const currentTopSpeed = state.nitroActive ? state.nitroMaxSpeed : state.maxSpeed;
+
+        if (keys.up) {
+          state.speed = Math.min(currentTopSpeed, state.speed + (state.nitroActive ? state.accel * 2.2 : state.accel));
+        } else if (keys.down) {
+          state.speed = Math.max(0, state.speed - state.braking);
+        } else {
+          state.speed = Math.max(0, state.speed - state.decel);
+        }
+
+        const steerSpeed = (state.speed / state.maxSpeed) * 0.038;
+        if (keys.left) {
+          state.playerX -= steerSpeed;
+          state.playerTilt = Math.max(-1, state.playerTilt - 0.12);
+        } else if (keys.right) {
+          state.playerX += steerSpeed;
+          state.playerTilt = Math.min(1, state.playerTilt + 0.12);
+        } else {
+          state.playerTilt *= 0.85;
+        }
+
+        state.playerX = Math.max(-1.3, Math.min(1.3, state.playerX));
+      }
+
+      state.bumpOffset = Math.sin(state.timeElapsed * 28) * (state.speed / 200) * 2;
+
+      const speedRatio = state.speed / state.nitroMaxSpeed;
+      state.gear = Math.min(7, Math.max(1, Math.floor(speedRatio * 6.5) + 1));
+      const gearRatio = ((state.speed % 55) / 55);
+      state.rpm = Math.floor(1200 + gearRatio * 6800 + (state.nitroActive ? 1200 : 0));
+
+      state.position += state.speed * dt * 60;
+      while (state.position >= ROAD.totalSegments * ROAD.segmentLength) {
+        state.position -= ROAD.totalSegments * ROAD.segmentLength;
+      }
+      state.distanceTotal += (state.speed * dt * 0.3);
+
+      for (let car of trafficCars) {
+        car.segmentIndex = (car.segmentIndex + (car.speed * dt * 0.25)) % ROAD.totalSegments;
+        const pSeg = Math.floor(state.position / ROAD.segmentLength);
+        if (Math.abs(pSeg - Math.floor(car.segmentIndex)) < 3 && state.speed > car.speed) {
+          state.overtakeCount++;
+        }
+      }
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.size *= 0.96;
+        p.life -= p.decay;
+        if (p.life <= 0 || p.size < 0.5) {
+          particles.splice(i, 1);
+        }
+      }
+
+      for (let s of speedLines) {
+        s.z -= (state.speed / 80) * dt;
+        if (s.z <= 0) {
+          s.z = 1;
+          s.x = (Math.random() - 0.5) * 2;
+          s.y = (Math.random() - 0.5) * 2;
+        }
+      }
+
+      updateAudio();
+      updateHUD();
+    }
+
+    const speedText = document.getElementById('speed-text');
+    const speedDialBar = document.getElementById('speed-dial-bar');
+    const gearVal = document.getElementById('gear-val');
+    const rpmVal = document.getElementById('rpm-val');
+    const distVal = document.getElementById('dist-val');
+    const nitroVal = document.getElementById('nitro-val');
+    const nitroFillBar = document.getElementById('nitro-fill-bar');
+
+    function updateHUD() {
+      const displaySpeed = Math.round(state.speed);
+      speedText.innerText = displaySpeed;
+
+      const maxDisplay = 360;
+      const progress = Math.min(1, displaySpeed / maxDisplay);
+      const dashOffset = 251.2 * (1 - progress * 0.75);
+      speedDialBar.style.strokeDashoffset = dashOffset;
+      
+      if (state.nitroActive) {
+        speedDialBar.style.stroke = "#ec4899";
+      } else if (displaySpeed > 240) {
+        speedDialBar.style.stroke = "#f59e0b";
+      } else {
+        speedDialBar.style.stroke = "#38bdf8";
+      }
+
+      gearVal.innerText = state.speed < 5 ? "N" : state.gear;
+      rpmVal.innerText = state.rpm;
+      distVal.innerText = (state.distanceTotal / 1000).toFixed(1) + " km";
+
+      const nitroPercent = Math.round(state.nitroFuel);
+      nitroVal.innerText = nitroPercent + "%";
+      nitroFillBar.style.width = nitroPercent + "%";
+    }
+
+    function drawPlayerCar(x, y, scale, tilt, isBraking, isNitro) {
+      ctx.save();
+      ctx.translate(x, y + state.bumpOffset);
+      ctx.scale(scale * 1.7, scale * 1.7);
+
+      const theme = CAR_COLORS[state.carColorIndex];
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+      ctx.beginPath();
+      ctx.ellipse(0, 36, 120, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.rotate(tilt * 0.08);
+
+      const tireWidth = 34;
+      const tireHeight = 60;
+      [-1, 1].forEach(side => {
+        ctx.save();
+        ctx.translate(side * 82, 10);
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.roundRect(-tireWidth / 2, -tireHeight / 2, tireWidth, tireHeight, 8);
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.fillStyle = '#cbd5e1';
+        ctx.fillRect(-tireWidth / 4, -tireHeight / 3, tireWidth / 2, tireHeight / 1.5);
+        ctx.restore();
+      });
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-86, 16, 172, 28, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#020617';
+      for (let f = -60; f <= 60; f += 30) {
+        ctx.fillRect(f - 2, 22, 5, 20);
+      }
+
+      [-1, 1].forEach(side => {
+        [-8, 8].forEach(off => {
+          ctx.fillStyle = '#64748b';
+          ctx.beginPath();
+          ctx.arc(side * 48 + off, 32, 6, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = isNitro ? '#38bdf8' : '#0f172a';
+          ctx.beginPath();
+          ctx.arc(side * 48 + off, 32, 4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+
+      const grad = ctx.createLinearGradient(0, -60, 0, 30);
+      grad.addColorStop(0, theme.glow);
+      grad.addColorStop(0.35, theme.primary);
+      grad.addColorStop(1, theme.secondary);
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(-92, 18);
+      ctx.lineTo(-78, -35);
+      ctx.lineTo(-52, -58);
+      ctx.lineTo(52, -58);
+      ctx.lineTo(78, -35);
+      ctx.lineTo(92, 18);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.fillStyle = '#090d16';
+      ctx.beginPath();
+      ctx.moveTo(-45, -52);
+      ctx.lineTo(-32, -88);
+      ctx.lineTo(32, -88);
+      ctx.lineTo(45, -52);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+      ctx.lineWidth = 2;
+      for (let l = -80; l <= -56; l += 8) {
+        ctx.beginPath();
+        ctx.moveTo(-28, l);
+        ctx.lineTo(28, l);
+        ctx.stroke();
+      }
+
+      ctx.shadowColor = isBraking ? '#ff0055' : '#ef4444';
+      ctx.shadowBlur = isBraking ? 25 : 12;
+
+      ctx.fillStyle = isBraking ? '#ff2a6d' : '#ef4444';
+      ctx.beginPath();
+      ctx.roundRect(-80, -2, 160, 9, 4);
+      ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(-76, 1, 152, 3);
+      ctx.shadowBlur = 0;
+
+      const wingHeight = isNitro || state.speed > 160 ? -82 : -74;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(-45, wingHeight, 6, 26);
+      ctx.fillRect(39, wingHeight, 6, 26);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.beginPath();
+      ctx.roundRect(-98, wingHeight, 196, 10, 4);
+      ctx.fill();
+      ctx.fillStyle = theme.primary;
+      ctx.fillRect(-98, wingHeight + 8, 196, 3);
+
+      ctx.restore();
+    }
+
+    function drawTrafficCar(x, y, scale, color) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale * 1.3, scale * 1.3);
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+      ctx.beginPath();
+      ctx.ellipse(0, 24, 70, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(-62, -4, 20, 36);
+      ctx.fillRect(42, -4, 20, 36);
+
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-56, -30, 112, 48, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-38, -48, 76, 26, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(-48, -2, 24, 8);
+      ctx.fillRect(24, -2, 24, 8);
+
+      ctx.restore();
+    }
+
+    function drawRoadSprite(sprite, x, y, scale) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      if (sprite.type === 'light-pole') {
+        ctx.fillStyle = '#475569';
+        ctx.fillRect(-6, -260, 12, 260);
+
+        const dir = sprite.offset > 0 ? -1 : 1;
+        ctx.fillRect(-6, -260, dir * 90, 10);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(dir * 85, -250, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else if (sprite.type === 'speed-arch') {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 14;
+        ctx.beginPath();
+        ctx.moveTo(-ROAD.roadWidth * 0.7, 0);
+        ctx.lineTo(-ROAD.roadWidth * 0.7, -700);
+        ctx.lineTo(ROAD.roadWidth * 0.7, -700);
+        ctx.lineTo(ROAD.roadWidth * 0.7, 0);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ec4899';
+        ctx.font = 'bold 70px Impact';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = '#ec4899';
+        ctx.shadowBlur = 30;
+        ctx.fillText("APEX NITRO SPEEDWAY", 0, -640);
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
+    function drawBackground(theme, curveOffset) {
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height / 2);
+      skyGrad.addColorStop(0, theme.skyTop);
+      skyGrad.addColorStop(1, theme.skyBottom);
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height / 2);
+
+      const sunY = height / 2 - 20;
+      const sunX = width / 2 - curveOffset * 0.2;
+      const sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 140);
+      sunGrad.addColorStop(0, '#ffffff');
+      sunGrad.addColorStop(0.3, theme.sunColor);
+      sunGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(sunX, sunY, 140, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = theme.ground;
+      ctx.beginPath();
+      ctx.moveTo(0, height / 2);
+      for (let x = 0; x <= width; x += 60) {
+        const h = Math.sin((x + curveOffset * 0.5) * 0.008) * 45 + Math.cos(x * 0.02) * 20;
+        ctx.lineTo(x, height / 2 - 40 - Math.abs(h));
+      }
+      ctx.lineTo(width, height / 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = theme.ground;
+      ctx.fillRect(0, height / 2, width, height / 2);
+    }
+
+    function render() {
+      const theme = THEMES[state.themeIndex];
+      const baseSegment = segments[Math.floor(state.position / ROAD.segmentLength) % ROAD.totalSegments];
+      const basePercent = (state.position % ROAD.segmentLength) / ROAD.segmentLength;
+
+      const playerSegment = segments[(Math.floor(state.position / ROAD.segmentLength) + 5) % ROAD.totalSegments];
+      const playerY = playerSegment.world.y;
+      const cameraX = state.playerX * ROAD.roadWidth;
+      const cameraY = ROAD.cameraHeight + playerY;
+      const cameraZ = state.position - (ROAD.cameraDepth * 80);
+
+      drawBackground(theme, cameraX * 0.15 + (playerSegment.curve * 120));
+
+      let maxY = height;
+      let x = 0;
+      let dx = - (baseSegment.curve * basePercent);
+
+      const renderSegments = [];
+      for (let n = 0; n < ROAD.drawDistance; n++) {
+        const seg = segments[(baseSegment.index + n) % ROAD.totalSegments];
+        const loop = (baseSegment.index + n >= ROAD.totalSegments);
+
+        project(seg, cameraX - x, cameraY, cameraZ + (loop ? ROAD.totalSegments * ROAD.segmentLength : 0));
+
+        x += dx;
+        dx += seg.curve;
+
+        seg.clip = maxY;
+        if (seg.screen.y >= maxY) continue;
+        maxY = seg.screen.y;
+
+        renderSegments.push(seg);
+      }
+
+      for (let n = renderSegments.length - 1; n > 0; n--) {
+        const seg = renderSegments[n];
+        const prev = renderSegments[n - 1];
+
+        const isAlt = Math.floor(seg.index / ROAD.rumbleLength) % 2 === 0;
+        const roadCol = isAlt ? theme.roadLight : theme.roadDark;
+        const rumbleCol = isAlt ? theme.rumble1 : theme.rumble2;
+
+        drawPolygon(0, prev.screen.y, width, prev.screen.y, width, seg.screen.y, 0, seg.screen.y, theme.ground);
+
+        const rumbleW1 = prev.screen.w * 1.18;
+        const rumbleW2 = seg.screen.w * 1.18;
+        drawPolygon(
+          prev.screen.x - rumbleW1, prev.screen.y,
+          prev.screen.x + rumbleW1, prev.screen.y,
+          seg.screen.x + rumbleW2, seg.screen.y,
+          seg.screen.x - rumbleW2, seg.screen.y,
+          rumbleCol
+        );
+
+        drawPolygon(
+          prev.screen.x - prev.screen.w, prev.screen.y,
+          prev.screen.x + prev.screen.w, prev.screen.y,
+          seg.screen.x + seg.screen.w, seg.screen.y,
+          seg.screen.x - seg.screen.w, seg.screen.y,
+          roadCol
+        );
+
+        if (isAlt) {
+          const laneW1 = (prev.screen.w * 2) / ROAD.lanes;
+          const laneW2 = (seg.screen.w * 2) / ROAD.lanes;
+          for (let l = 1; l < ROAD.lanes; l++) {
+            const laneX1 = prev.screen.x - prev.screen.w + (l * laneW1);
+            const laneX2 = seg.screen.x - seg.screen.w + (l * laneW2);
+            const lineThickness = Math.max(2, prev.screen.w * 0.015);
+            drawPolygon(
+              laneX1 - lineThickness, prev.screen.y,
+              laneX1 + lineThickness, prev.screen.y,
+              laneX2 + lineThickness, seg.screen.y,
+              laneX2 - lineThickness, seg.screen.y,
+              theme.lane
+            );
+          }
+        }
+
+        for (let spr of seg.sprites) {
+          const spriteX = seg.screen.x + (seg.screen.scale * spr.offset * ROAD.roadWidth * width / 2);
+          const spriteY = seg.screen.y;
+          drawRoadSprite(spr, spriteX, spriteY, seg.screen.scale * width * 0.4);
+        }
+      }
+
+      for (let car of trafficCars) {
+        const carSeg = segments[Math.floor(car.segmentIndex)];
+        if (renderSegments.includes(carSeg)) {
+          const carScreenX = carSeg.screen.x + (carSeg.screen.scale * car.offset * ROAD.roadWidth * width / 2);
+          const carScreenY = carSeg.screen.y;
+          drawTrafficCar(carScreenX, carScreenY, carSeg.screen.scale * width * 0.35, car.color);
+        }
+      }
+
+      if (state.speed > 140) {
+        ctx.strokeStyle = state.nitroActive ? 'rgba(56, 189, 248, 0.8)' : 'rgba(255, 255, 255, 0.45)';
+        ctx.lineWidth = state.nitroActive ? 3 : 1.5;
+        for (let s of speedLines) {
+          const sx = width / 2 + (s.x / s.z) * (width / 2);
+          const sy = height / 2 + (s.y / s.z) * (height / 2);
+          const ex = width / 2 + (s.x / (s.z + s.length)) * (width / 2);
+          const ey = height / 2 + (s.y / (s.z + s.length)) * (height / 2);
+
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+        }
+      }
+
+      const playerScreenX = width / 2 + (state.playerTilt * 30);
+      const playerScreenY = height - 120;
+      const isBraking = keys.down;
+      drawPlayerCar(playerScreenX, playerScreenY, 1.0, state.playerTilt, isBraking, state.nitroActive);
+
+      if (state.speed > 10) {
+        spawnExhaustParticle(state.nitroActive, playerScreenX, playerScreenY, 1.0);
+      }
+      if (Math.abs(state.playerTilt) > 0.5 && state.speed > 120) {
+        spawnTireSmoke(playerScreenX, playerScreenY, 1.0);
+      }
+
+      for (let p of particles) {
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = p.life;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+    }
+
+    function loop(currentTime) {
+      const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
+      lastTime = currentTime;
+      update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame((t) => {
+      lastTime = t;
+      loop(t);
+    });
+  </script>
+</body>
+</html>

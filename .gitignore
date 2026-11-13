@@ -1,0 +1,8 @@
+# Antigravity 系统与本地运行时目录
+antigravity/
+antigravity-ide/
+bin/
+config/
+logs/
+hello/
+*.log
